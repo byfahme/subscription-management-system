@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Subscriptions</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="container mt-4">
+    <h1>Subscriptions</h1>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+    {% endwith %}
+    <a href="{{ url_for('catalog.new_subscription') }}" class="btn btn-primary mb-3">New subscription</a>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Number</th>
+                <th>Status</th>
+                <th>Start date</th>
+                <th>Next billing</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in subs %}
+            <tr>
+                <td>{{ s.number }}</td>
+                <td>{{ s.status }}</td>
+                <td>{{ s.start_date }}</td>
+                <td>{{ s.next_billing_date or '-' }}</td>
+                <td><a href="{{ url_for('catalog.subscription_detail', sub_id=s.id) }}">Open</a></td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5">No subscriptions yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+
+</html>
