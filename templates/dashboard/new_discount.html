@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="max-width: 560px;">
+  <h2 class="mb-4">New discount</h2>
+  <form method="post">
+    <div class="mb-3">
+      <label class="form-label">Name</label>
+      <input type="text" name="name" class="form-control" required>
+    </div>
+    <div class="row mb-3">
+      <div class="col">
+        <label class="form-label">Type</label>
+        <select name="type" class="form-select" required>
+          <option value="fixed">Fixed amount</option>
+          <option value="percent">Percent</option>
+        </select>
+      </div>
+      <div class="col">
+        <label class="form-label">Value</label>
+        <input type="number" step="0.01" min="0.01" name="value" class="form-control" required>
+      </div>
+    </div>
+    <div class="row mb-3">
+      <div class="col">
+        <label class="form-label">Minimum amount</label>
+        <input type="number" step="0.01" min="0" name="min_amount" class="form-control" value="0">
+      </div>
+      <div class="col">
+        <label class="form-label">Minimum quantity</label>
+        <input type="number" min="0" name="min_qty" class="form-control" value="0">
+      </div>
+    </div>
+    <div class="row mb-3">
+      <div class="col">
+        <label class="form-label">Start date</label>
+        <input type="date" name="start_date" class="form-control">
+      </div>
+      <div class="col">
+        <label class="form-label">End date</label>
+        <input type="date" name="end_date" class="form-control">
+      </div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Usage limit (leave empty for unlimited)</label>
+      <input type="number" min="1" name="usage_limit" class="form-control">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Applies to product (optional)</label>
+      <select name="product_id" class="form-select">
+        <option value="">All products</option>
+        {% for p in products %}
+          <option value="{{ p.id }}">{{ p.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary w-100">Create discount</button>
+  </form>
+</div>
+{% endblock %}
