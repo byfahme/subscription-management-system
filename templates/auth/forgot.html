@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5" style="max-width: 420px;">
+  <h2 class="mb-4">Forgot password</h2>
+  <form method="post">
+    <div class="mb-3">
+      <label class="form-label">Email</label>
+      <input type="email" name="email" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-primary w-100">Send reset link</button>
+  </form>
+</div>
+{% endblock %}

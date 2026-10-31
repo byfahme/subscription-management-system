@@ -2,8 +2,13 @@ import re
 from flask import Blueprint, render_template, request, redirect, flash
 from flask_login import login_user, logout_user, login_required
 from werkzeug.security import check_password_hash, generate_password_hash
-from extensions import db, login_manager
+from extensions import db, login_manager, mail
 from models import User
+from utils import role_required
+from flask import current_app
+from flask_mail import Message
+from itsdangerous import URLSafeTimedSerializer
+from itsdangerous import BadSignature, SignatureExpired
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -63,3 +68,81 @@ def login():
 def logout():
     logout_user()
     return redirect("/login")
+
+@auth_bp.route("/admin/staff/new", methods=["GET", "POST"])
+@role_required("admin")
+def add_staff():
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        if not name or not email:
+            flash("Name and email are required.", "danger")
+        elif not PASSWORD_RE.match(password):
+            flash("Password must be more than 8 characters and include an uppercase letter, a lowercase letter, and a special character.", "danger")
+        elif User.query.filter_by(email=email).first():
+            flash("An account with this email already exists.", "danger")
+        else:
+            staff = User(
+                name=name,
+                email=email,
+                password_hash=generate_password_hash(password),
+                role="staff",  # only admins can reach this page, so staff is set here
+            )
+            db.session.add(staff)
+            db.session.commit()
+            flash(f"Staff account created for {email}.", "success")
+            return redirect("/admin/staff/new")
+    return render_template("auth/add_staff.html")
+
+def _reset_serializer():
+    return URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
+
+
+@auth_bp.route("/forgot", methods=["GET", "POST"])
+def forgot():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        user = User.query.filter_by(email=email).first()
+        if user:
+            token = _reset_serializer().dumps(user.email, salt="reset")
+            link = request.host_url.rstrip("/") + "/reset/" + token
+            try:
+                msg = Message("Reset your password", recipients=[user.email])
+                msg.body = f"Open this link to reset your password (valid for 1 hour):\n{link}"
+                mail.send(msg)
+            except Exception as e:
+                # Fallback: if email is not configured, print the link in the terminal
+                print(f"Email could not be sent ({e}). Reset link: {link}")
+        # Same message whether or not the email exists, so people can't discover accounts
+        flash("If that email is registered, a reset link has been sent.", "info")
+        return redirect("/login")
+    return render_template("auth/forgot.html")
+
+@auth_bp.route("/reset/<token>", methods=["GET", "POST"])
+def reset(token):
+    try:
+        email = _reset_serializer().loads(token, salt="reset", max_age=3600)
+    except SignatureExpired:
+        flash("This reset link has expired. Please request a new one.", "danger")
+        return redirect("/forgot")
+    except BadSignature:
+        flash("This reset link is invalid.", "danger")
+        return redirect("/forgot")
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        flash("This reset link is invalid.", "danger")
+        return redirect("/forgot")
+
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        if not PASSWORD_RE.match(password):
+            flash("Password must be more than 8 characters and include an uppercase letter, a lowercase letter, and a special character.", "danger")
+        else:
+            user.password_hash = generate_password_hash(password)
+            db.session.commit()
+            flash("Password updated. Please log in.", "success")
+            return redirect("/login")
+    return render_template("auth/reset.html", token=token)
