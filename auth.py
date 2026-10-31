@@ -1,14 +1,12 @@
 import re
-from flask import Blueprint, render_template, request, redirect, flash
+from flask import Blueprint, render_template, request, redirect, flash, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from flask_mail import Message
 from extensions import db, login_manager, mail
 from models import User, Subscription, Invoice
 from utils import role_required
-from flask import current_app
-from flask_mail import Message
-from itsdangerous import URLSafeTimedSerializer
-from itsdangerous import BadSignature, SignatureExpired
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -56,6 +54,10 @@ def login():
         user = User.query.filter_by(email=email).first()
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
+            next_url = request.args.get("next", "")
+            # Only allow paths on this site, so the redirect can't send users elsewhere
+            if next_url.startswith("/") and not next_url.startswith("//"):
+                return redirect(next_url)
             if user.role == "customer":
                 return redirect("/portal")
             return redirect("/dashboard")
@@ -68,6 +70,7 @@ def login():
 def logout():
     logout_user()
     return redirect("/login")
+
 
 @auth_bp.route("/admin/staff/new", methods=["GET", "POST"])
 @role_required("admin")
@@ -96,6 +99,7 @@ def add_staff():
             return redirect("/admin/staff/new")
     return render_template("auth/add_staff.html")
 
+
 def _reset_serializer():
     return URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
 
@@ -119,6 +123,7 @@ def forgot():
         flash("If that email is registered, a reset link has been sent.", "info")
         return redirect("/login")
     return render_template("auth/forgot.html")
+
 
 @auth_bp.route("/reset/<token>", methods=["GET", "POST"])
 def reset(token):
@@ -146,6 +151,7 @@ def reset(token):
             flash("Password updated. Please log in.", "success")
             return redirect("/login")
     return render_template("auth/reset.html", token=token)
+
 
 @auth_bp.route("/portal")
 @role_required("customer")
