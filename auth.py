@@ -4,6 +4,7 @@ from flask_login import login_user, logout_user, login_required
 from werkzeug.security import check_password_hash, generate_password_hash
 from extensions import db, login_manager
 from models import User
+from utils import role_required
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -63,3 +64,30 @@ def login():
 def logout():
     logout_user()
     return redirect("/login")
+
+@auth_bp.route("/admin/staff/new", methods=["GET", "POST"])
+@role_required("admin")
+def add_staff():
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        if not name or not email:
+            flash("Name and email are required.", "danger")
+        elif not PASSWORD_RE.match(password):
+            flash("Password must be more than 8 characters and include an uppercase letter, a lowercase letter, and a special character.", "danger")
+        elif User.query.filter_by(email=email).first():
+            flash("An account with this email already exists.", "danger")
+        else:
+            staff = User(
+                name=name,
+                email=email,
+                password_hash=generate_password_hash(password),
+                role="staff",  # only admins can reach this page, so staff is set here
+            )
+            db.session.add(staff)
+            db.session.commit()
+            flash(f"Staff account created for {email}.", "success")
+            return redirect("/admin/staff/new")
+    return render_template("auth/add_staff.html")
