@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">Finance dashboard</h2>
+
+<div class="row mb-4">
+  <div class="col-md-4"><div class="card text-bg-light"><div class="card-body">
+    <div class="small">Active subscriptions</div>
+    <div class="fs-3 fw-bold">{{ active_count }}</div>
+  </div></div></div>
+  <div class="col-md-4"><div class="card text-bg-light"><div class="card-body">
+    <div class="small">Revenue collected</div>
+    <div class="fs-3 fw-bold">{{ "%.2f"|format(collected) }}</div>
+  </div></div></div>
+  <div class="col-md-4"><div class="card text-bg-light"><div class="card-body">
+    <div class="small">Outstanding</div>
+    <div class="fs-3 fw-bold">{{ "%.2f"|format(outstanding) }}</div>
+  </div></div></div>
+</div>
+
+<form method="get" class="row g-2 mb-4">
+  <div class="col-md-2">
+    <input type="date" name="start" value="{{ filters.start }}" class="form-control" title="From">
+  </div>
+  <div class="col-md-2">
+    <input type="date" name="end" value="{{ filters.end }}" class="form-control" title="To">
+  </div>
+  <div class="col-md-2">
+    <select name="status" class="form-select">
+      <option value="">All statuses</option>
+      {% for s in ["draft", "confirmed", "paid", "cancelled"] %}
+        <option value="{{ s }}" {% if filters.status == s %}selected{% endif %}>{{ s|capitalize }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4">
+    <input type="text" name="customer" value="{{ filters.customer }}" class="form-control" placeholder="Customer name or email">
+  </div>
+  <div class="col-md-2">
+    <button type="submit" class="btn btn-primary w-100">Filter</button>
+  </div>
+</form>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title">Monthly revenue</h5>
+    <canvas id="revenueChart" height="90"></canvas>
+  </div>
+</div>
+
+<h5>Overdue invoices</h5>
+{% if overdue.items %}
+<table class="table table-sm table-striped">
+  <thead><tr><th>Invoice</th><th>Customer</th><th>Due date</th><th>Total</th></tr></thead>
+  <tbody>
+    {% for inv, cust in overdue.items %}
+    <tr>
+      <td>{{ inv.number }} <span class="badge bg-danger">Overdue</span></td>
+      <td>{{ cust.name }}</td>
+      <td>{{ inv.due_date }}</td>
+      <td>{{ "%.2f"|format(inv.total) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<nav>
+  <ul class="pagination pagination-sm">
+    {% if overdue.has_prev %}
+    <li class="page-item"><a class="page-link" href="{{ url_for('dashboard.dashboard', overdue_page=overdue.prev_num, page=invoices.page, start=filters.start, end=filters.end, status=filters.status, customer=filters.customer) }}">Previous</a></li>
+    {% endif %}
+    {% if overdue.has_next %}
+    <li class="page-item"><a class="page-link" href="{{ url_for('dashboard.dashboard', overdue_page=overdue.next_num, page=invoices.page, start=filters.start, end=filters.end, status=filters.status, customer=filters.customer) }}">Next</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% else %}
+<p>No overdue invoices.</p>
+{% endif %}
+
+<h5 class="mt-4">Invoices</h5>
+{% if invoices.items %}
+<table class="table table-sm table-striped">
+  <thead><tr><th>Invoice</th><th>Customer</th><th>Status</th><th>Total</th></tr></thead>
+  <tbody>
+    {% for inv, cust in invoices.items %}
+    <tr>
+      <td>{{ inv.number }}</td>
+      <td>{{ cust.name }}</td>
+      <td>{{ inv.status }}</td>
+      <td>{{ "%.2f"|format(inv.total) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<nav>
+  <ul class="pagination pagination-sm">
+    {% if invoices.has_prev %}
+    <li class="page-item"><a class="page-link" href="{{ url_for('dashboard.dashboard', page=invoices.prev_num, overdue_page=overdue.page, start=filters.start, end=filters.end, status=filters.status, customer=filters.customer) }}">Previous</a></li>
+    {% endif %}
+    {% if invoices.has_next %}
+    <li class="page-item"><a class="page-link" href="{{ url_for('dashboard.dashboard', page=invoices.next_num, overdue_page=overdue.page, start=filters.start, end=filters.end, status=filters.status, customer=filters.customer) }}">Next</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% else %}
+<p>No invoices match these filters.</p>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  new Chart(document.getElementById("revenueChart"), {
+    type: "bar",
+    data: {
+      labels: {{ chart_labels|tojson }},
+      datasets: [{ label: "Collected", data: {{ chart_values|tojson }}, backgroundColor: "#0d6efd" }]
+    },
+    options: { plugins: { legend: { display: false } } }
+  });
+</script>
+{% endblock %}
