@@ -1,15 +1,46 @@
+import re
 from flask import Blueprint, render_template, request, redirect, flash
 from flask_login import login_user, logout_user, login_required
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 from extensions import db, login_manager
 from models import User
 
 auth_bp = Blueprint("auth", __name__)
 
+# More than 8 characters, with at least one lowercase, one uppercase, and one special character
+PASSWORD_RE = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{9,}$")
+
 
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
+
+
+@auth_bp.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        if not name or not email:
+            flash("Name and email are required.", "danger")
+        elif not PASSWORD_RE.match(password):
+            flash("Password must be more than 8 characters and include an uppercase letter, a lowercase letter, and a special character.", "danger")
+        elif User.query.filter_by(email=email).first():
+            flash("An account with this email already exists.", "danger")
+        else:
+            user = User(
+                name=name,
+                email=email,
+                password_hash=generate_password_hash(password),
+                role="customer",  # public signup can never create admin or staff
+            )
+            db.session.add(user)
+            db.session.commit()
+            flash("Account created. Please log in.", "success")
+            return redirect("/login")
+    return render_template("auth/register.html")
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
