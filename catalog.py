@@ -58,8 +58,10 @@ def new_plan():
             price=float(f.get("price", 0)),
             period=f.get("period", "monthly"),
             min_qty=int(f.get("min_qty", 1)),
-            start_date=date.fromisoformat(f["start_date"]) if f.get("start_date") else None,
-            end_date=date.fromisoformat(f["end_date"]) if f.get("end_date") else None,
+            start_date=date.fromisoformat(
+                f["start_date"]) if f.get("start_date") else None,
+            end_date=date.fromisoformat(
+                f["end_date"]) if f.get("end_date") else None,
             auto_close=bool(f.get("auto_close")),
             allow_pause=bool(f.get("allow_pause")),
             allow_renew=bool(f.get("allow_renew")),
@@ -142,6 +144,8 @@ def new_subscription():
             customer_id=int(f["customer_id"]),
             plan_id=int(f["plan_id"]) if f.get("plan_id") else None,
             start_date=date.fromisoformat(f["start_date"]),
+            expiry_date=date.fromisoformat(
+                f["expiry_date"]) if f.get("expiry_date") else None,
             payment_terms=f.get("payment_terms", "Net 30"),
             status="draft",
             next_billing_date=None,
@@ -161,7 +165,8 @@ def new_subscription():
         flash(f"Subscription {sub.number} created.", "success")
         return redirect(url_for("catalog.subscription_detail", sub_id=sub.id))
     return render_template("catalog/new_subscription.html",
-                           customers=User.query.filter_by(role="customer").all(),
+                           customers=User.query.filter_by(
+                               role="customer").all(),
                            plans=Plan.query.all(),
                            products=Product.query.all())
 

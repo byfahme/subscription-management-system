@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5" style="max-width: 420px;">
+  <h2 class="mb-4">Add staff account</h2>
+  <form method="post">
+    <div class="mb-3">
+      <label class="form-label">Name</label>
+      <input type="text" name="name" class="form-control" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Email</label>
+      <input type="email" name="email" class="form-control" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Temporary password</label>
+      <input type="password" name="password" class="form-control" required>
+      <div class="form-text">More than 8 characters, with an uppercase letter, a lowercase letter, and a special character.</div>
+    </div>
+    <button type="submit" class="btn btn-primary w-100">Create staff account</button>
+  </form>
+</div>
+{% endblock %}

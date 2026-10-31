@@ -3,3 +3,4 @@ app.db
 __pycache__/
 make_admin.py
 make_admin.py
+make_customer.py

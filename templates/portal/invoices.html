@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">My invoices</h2>
+{% if invoices.items %}
+<table class="table table-striped">
+  <thead>
+    <tr><th>Number</th><th>Status</th><th>Due date</th><th>Total</th></tr>
+  </thead>
+  <tbody>
+    {% for inv in invoices.items %}
+    <tr>
+      <td>{{ inv.number }}</td>
+      <td>{{ inv.status }}</td>
+      <td>{{ inv.due_date }}</td>
+      <td>{{ inv.total }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<nav>
+  <ul class="pagination">
+    {% if invoices.has_prev %}
+      <li class="page-item"><a class="page-link" href="?page={{ invoices.prev_num }}">Previous</a></li>
+    {% endif %}
+    {% if invoices.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ invoices.next_num }}">Next</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% else %}
+<p>You have no invoices yet.</p>
+{% endif %}
+{% endblock %}

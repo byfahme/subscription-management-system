@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">My subscriptions</h2>
+{% if subs %}
+<table class="table table-striped">
+  <thead>
+    <tr><th>Number</th><th>Status</th><th>Start</th><th>Next billing</th></tr>
+  </thead>
+  <tbody>
+    {% for s in subs %}
+    <tr>
+      <td>{{ s.number }}</td>
+      <td>{{ s.status }}</td>
+      <td>{{ s.start_date }}</td>
+      <td>{{ s.next_billing_date or "-" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>You have no subscriptions yet.</p>
+{% endif %}
+{% endblock %}
