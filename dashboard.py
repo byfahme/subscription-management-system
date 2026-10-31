@@ -1,8 +1,8 @@
 from datetime import date
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, redirect, flash
 from sqlalchemy import func, or_
 from extensions import db
-from models import Subscription, Invoice, Payment, User
+from models import Subscription, Invoice, Payment, User, Discount, Product
 from utils import role_required
 
 dashboard_bp = Blueprint("dashboard", __name__)
@@ -117,3 +117,45 @@ def dashboard():
         filters={"start": request.args.get("start", ""), "end": request.args.get("end", ""),
                  "status": status, "customer": customer_text},
     )
+
+@dashboard_bp.route("/discounts")
+@role_required("admin")
+def discounts():
+    page = request.args.get("page", 1, type=int)
+    items = Discount.query.order_by(Discount.id.desc()).paginate(
+        page=page, per_page=PER_PAGE, error_out=False
+    )
+    return render_template("dashboard/discounts.html", discounts=items)
+
+
+@dashboard_bp.route("/discounts/new", methods=["GET", "POST"])
+@role_required("admin")
+def new_discount():
+    products = Product.query.order_by(Product.name).all()
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        dtype = request.form.get("type", "")
+        value = request.form.get("value", type=float)
+        if not name or dtype not in ("fixed", "percent") or value is None or value <= 0:
+            flash("Enter a name, choose fixed or percent, and a value above 0.", "danger")
+        elif dtype == "percent" and value > 100:
+            flash("A percent discount cannot be more than 100.", "danger")
+        else:
+            product_id = request.form.get("product_id", type=int) or None
+            discount = Discount(
+                name=name,
+                type=dtype,
+                value=value,
+                min_amount=request.form.get("min_amount", 0, type=float) or 0,
+                min_qty=request.form.get("min_qty", 0, type=int) or 0,
+                start_date=_parse_date(request.form.get("start_date")),
+                end_date=_parse_date(request.form.get("end_date")),
+                usage_limit=request.form.get("usage_limit", type=int) or None,
+                times_used=0,
+                product_id=product_id,
+            )
+            db.session.add(discount)
+            db.session.commit()
+            flash(f"Discount '{name}' created.", "success")
+            return redirect("/discounts")
+    return render_template("dashboard/new_discount.html", products=products)
