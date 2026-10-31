@@ -1,9 +1,9 @@
 import re
 from flask import Blueprint, render_template, request, redirect, flash
-from flask_login import login_user, logout_user, login_required
+from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from extensions import db, login_manager, mail
-from models import User
+from models import User, Subscription, Invoice
 from utils import role_required
 from flask import current_app
 from flask_mail import Message
@@ -146,3 +146,22 @@ def reset(token):
             flash("Password updated. Please log in.", "success")
             return redirect("/login")
     return render_template("auth/reset.html", token=token)
+
+@auth_bp.route("/portal")
+@role_required("customer")
+def portal():
+    # Filter by current_user.id only, never by an id from the URL
+    subs = Subscription.query.filter_by(customer_id=current_user.id).all()
+    return render_template("portal/index.html", subs=subs)
+
+
+@auth_bp.route("/portal/invoices")
+@role_required("customer")
+def portal_invoices():
+    page = request.args.get("page", 1, type=int)
+    invoices = (
+        Invoice.query.filter_by(customer_id=current_user.id)
+        .order_by(Invoice.created_at.desc())
+        .paginate(page=page, per_page=20, error_out=False)
+    )
+    return render_template("portal/invoices.html", invoices=invoices)
