@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2>Discounts</h2>
+  <a href="/discounts/new" class="btn btn-primary">New discount</a>
+</div>
+
+{% if discounts.items %}
+<table class="table table-striped">
+  <thead>
+    <tr><th>Name</th><th>Type</th><th>Value</th><th>Dates</th><th>Used</th></tr>
+  </thead>
+  <tbody>
+    {% for d in discounts.items %}
+    <tr>
+      <td>{{ d.name }}</td>
+      <td>{{ d.type }}</td>
+      <td>{{ d.value }}{% if d.type == "percent" %}%{% endif %}</td>
+      <td>{{ d.start_date or "-" }} to {{ d.end_date or "-" }}</td>
+      <td>{{ d.times_used }}{% if d.usage_limit %} / {{ d.usage_limit }}{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<nav>
+  <ul class="pagination">
+    {% if discounts.has_prev %}
+      <li class="page-item"><a class="page-link" href="?page={{ discounts.prev_num }}">Previous</a></li>
+    {% endif %}
+    {% if discounts.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ discounts.next_num }}">Next</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% else %}
+<p>No discounts yet.</p>
+{% endif %}
+{% endblock %}
