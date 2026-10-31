@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0">Invoices</h2>
+  {% if current_user.role == 'admin' %}
+  <form method="post" action="/billing/run">
+    <button class="btn btn-success" type="submit">Run billing</button>
+  </form>
+  {% endif %}
+</div>
+
+<form method="get" class="row g-2 mb-3">
+  <div class="col-auto">
+    <select name="status" class="form-select">
+      <option value="">All statuses</option>
+      {% for s in statuses %}
+      <option value="{{ s }}" {% if s == status %}selected{% endif %}>{{ s|capitalize }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% if customers %}
+  <div class="col-auto">
+    <select name="customer_id" class="form-select">
+      <option value="">All customers</option>
+      {% for c in customers %}
+      <option value="{{ c.id }}" {% if c.id == customer_id %}selected{% endif %}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endif %}
+  <div class="col-auto">
+    <button class="btn btn-primary" type="submit">Filter</button>
+  </div>
+</form>
+
+<div class="table-responsive">
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th>Number</th>
+        <th>Customer</th>
+        <th>Status</th>
+        <th>Due date</th>
+        <th class="text-end">Total</th>
+        <th class="text-end">Paid</th>
+        <th class="text-end">Outstanding</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.inv.number }}</td>
+        <td>{{ r.customer }}</td>
+        <td>
+          <span class="badge bg-secondary">{{ r.inv.status }}</span>
+          {% if r.overdue %}<span class="badge bg-danger">overdue</span>{% endif %}
+        </td>
+        <td>{{ r.inv.due_date or '-' }}</td>
+        <td class="text-end">{{ "%.2f"|format(r.inv.total or 0) }}</td>
+        <td class="text-end">{{ "%.2f"|format(r.paid) }}</td>
+        <td class="text-end">{{ "%.2f"|format(r.outstanding) }}</td>
+        <td><a class="btn btn-sm btn-outline-primary" href="/invoices/{{ r.inv.id }}">View</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="text-center text-muted">No invoices found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
